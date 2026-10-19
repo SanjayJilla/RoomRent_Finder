@@ -42,7 +42,9 @@ app.mount("/uploads",StaticFiles(directory=str(UPLOAD_DIR)),name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173",
+                   "http://localhost:4173",
+                   "https://room-rent-finder-one.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
