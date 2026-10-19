@@ -82,6 +82,12 @@ function OwnerDashboard() {
         >
           Logout
         </button>
+        <button
+            onClick={() => navigate("/owner/add-room")}
+            className="primary-btn"
+        >
+          + Add Property
+        </button>
       </div>
       {loading ? (
         <p>Loading your rooms...</p>
@@ -155,12 +161,7 @@ function OwnerDashboard() {
                     <Link to="/owner/profile" className="primary-btn">
                         My Profile
                       </Link>
-                      <button
-                        onClick={() => navigate("/owner/add-room")}
-                        className="primary-btn"
-                      >
-                        + Add Property
-                      </button>
+                      
                     </div>
                 </div>
                 </div>
