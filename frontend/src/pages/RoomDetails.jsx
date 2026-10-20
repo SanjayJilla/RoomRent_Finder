@@ -149,7 +149,11 @@ function RoomDetails() {
                 {room.images.map((imageUrl, index) => (
                 <img
                     key={imageUrl}
-                    src={`${import.meta.env.VITE_API_URL}${imageUrl}`}
+                    src={
+                        imageUrl.startsWith("http")
+                          ? imageUrl
+                          : `${import.meta.env.VITE_API_URL}${imageUrl}`
+                      }
                     alt={`${room.title} photo ${index + 1}`}
                     className="gallery-image"
                 />

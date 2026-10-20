@@ -15,6 +15,8 @@ from typing import Literal
 from uuid import uuid4
 from jose import JWTError, jwt
 
+import cloudinary
+import cloudinary.uploader
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.exc import IntegrityError
 import os
@@ -35,6 +37,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
 if not SECRET_KEY:
     raise RuntimeError("JWT_SECRET_KEY is missing in .env")
 
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
 app = FastAPI(title="Rental Room Finder")
 UPLOAD_DIR=Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
@@ -763,8 +771,84 @@ def delete_room(
             detail="You cannot delete another owner's room"
         )
 
+    
+    # Fetch all photos belonging to this property
+    room_images = db.query(RoomImage).filter(
+        RoomImage.room_id == room_id
+    ).all()
+
+    from pathlib import Path
+    from urllib.parse import urlparse, unquote
+
+    # Delete stored photos
+    for image in room_images:
+        image_url = image.image_url
+
+        if image_url.startswith("https://res.cloudinary.com/"):
+            path = unquote(urlparse(image_url).path)
+            parts = path.split("/upload/", 1)
+
+            if len(parts) != 2:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Invalid Cloudinary image URL"
+                )
+
+            segments = parts[1].split("/")
+            version_index = next(
+                (
+                    i for i, segment in enumerate(segments)
+                    if segment.startswith("v") and segment[1:].isdigit()
+                ),
+                None
+            )
+
+            if version_index is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Unable to identify Cloudinary image"
+                )
+
+            public_id = "/".join(
+                segments[version_index + 1:]
+            ).rsplit(".", 1)[0]
+
+            try:
+                result = cloudinary.uploader.destroy(
+                    public_id,
+                    resource_type="image",
+                    invalidate=True
+                )
+
+                if result.get("result") not in ("ok", "not found"):
+                    raise Exception("Cloudinary deletion failed")
+
+            except Exception:
+                raise HTTPException(
+                    status_code=502,
+                    detail="Unable to delete property images from Cloudinary"
+                )
+
+        else:
+            # Older locally stored photos
+            file_path = UPLOAD_DIR / Path(image_url).name
+            file_path.unlink(missing_ok=True)
+
+    # Remove image records before deleting the property
+    for image in room_images:
+        db.delete(image)
+
     db.delete(room)
-    db.commit()
+
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to delete property"
+        )
+
 
     return {"message": "Room deleted successfully"}
 
@@ -824,33 +908,44 @@ async def upload_room_image(
             detail="Invalid image file. Only JPG, PNG and WEBP images are allowed(Max 5 MB)"
         )
 
-    extension = allowed_types[file.content_type]
-    filename = f"{uuid4().hex}{extension}"
+    try:
+        upload_result = cloudinary.uploader.upload(
+            contents,
+            folder="roomrentfinder/rooms",
+            resource_type="image"
+        )
 
-    file_path = UPLOAD_DIR / filename
-    file_path.write_bytes(contents)
+        image_url = upload_result["secure_url"]
+        public_id = upload_result["public_id"]
 
-    image_url = f"/uploads/{filename}"
+    except Exception:
+        raise HTTPException(
+            status_code=502,
+            detail="Image upload failed. Please try again."
+        )
 
     new_image = RoomImage(
-        room_id=room_id,
-        image_url=image_url
+            room_id=room_id,
+            image_url=image_url
     )
 
     try:
         db.add(new_image)
         db.commit()
         db.refresh(new_image)
+
     except Exception:
         db.rollback()
-        file_path.unlink(missing_ok=True)
-        raise
 
-    return {
-        "id": new_image.id,
-        "room_id": new_image.room_id,
-        "image_url": new_image.image_url
-    }
+        try:
+            cloudinary.uploader.destroy(public_id)
+        except Exception:
+            pass
+
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to save image information."
+        )
 
 @app.delete("/rooms/{room_id}/images/{image_id}")
 def delete_room_image(
@@ -878,14 +973,64 @@ def delete_room_image(
     if not image:
         raise HTTPException(status_code=404, detail="Image not found")
 
-    file_path = UPLOAD_DIR / Path(image.image_url).name
+    
+    image_url = image.image_url
+
+    # Delete Cloudinary images
+    if image_url.startswith("https://res.cloudinary.com/"):
+        from urllib.parse import urlparse, unquote
+
+        path = unquote(urlparse(image_url).path)
+        upload_path = path.split("/upload/", 1)
+
+        if len(upload_path) != 2:
+            raise HTTPException(
+                status_code=500,
+                detail="Invalid Cloudinary image URL"
+            )
+
+        parts = upload_path[1].split("/")
+        version_index = next(
+            (i for i, part in enumerate(parts) if part.startswith("v") and part[1:].isdigit()),
+            None
+        )
+
+        if version_index is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Unable to identify Cloudinary image"
+            )
+
+        public_id = "/".join(parts[version_index + 1:]).rsplit(".", 1)[0]
+
+        try:
+            result = cloudinary.uploader.destroy(
+                public_id,
+                resource_type="image",
+                invalidate=True
+            )
+
+            if result.get("result") not in ("ok", "not found"):
+                raise Exception("Cloudinary deletion unsuccessful")
+
+        except Exception:
+            raise HTTPException(
+                status_code=502,
+                detail="Unable to delete image from Cloudinary"
+            )
+
+    else:
+        # Support older locally stored images
+        file_path = UPLOAD_DIR / Path(image_url).name
+        file_path.unlink(missing_ok=True)
 
     db.delete(image)
     db.commit()
 
-    file_path.unlink(missing_ok=True)
-
     return {"message": "Image deleted successfully"}
+
+
+    
 
 @app.get("/rooms/{room_id}/images")
 def get_room_images(

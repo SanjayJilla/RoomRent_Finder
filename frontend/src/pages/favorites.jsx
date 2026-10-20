@@ -1,22 +1,54 @@
+
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { Link } from "react-router-dom";
-import { getFavorites, toggleFavorite } from "../utils/favorites";
+import { getFavorites, removeFavorite } from "../services/favoritesApi";
 
 function Favorites() {
-  const [rooms, setRooms] = useState([]);
-  const [favorites, setFavorites] = useState(getFavorites);
+  const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    axios.get(`${import.meta.env.VITE_API_URL}/rooms`)
-      .then((res) => setRooms(res.data))
-      .finally(() => setLoading(false));
+    let active = true;
+
+    getFavorites()
+      .then((data) => {
+        if (active) {
+          setFavorites(Array.isArray(data) ? data : []);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          setError(
+            err.response?.data?.detail ||
+            err.message ||
+            "Unable to load saved rooms."
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const savedRooms = rooms.filter((room) =>
-    favorites.includes(room.id)
-  );
+  const handleRemove = async (roomId) => {
+    try {
+      await removeFavorite(roomId);
+
+      setFavorites((previous) =>
+        previous.filter((room) => room.room_id !== roomId)
+      );
+    } catch (err) {
+      alert(
+        err.response?.data?.detail ||
+        "Unable to remove saved room."
+      );
+    }
+  };
 
   return (
     <div className="container">
@@ -24,28 +56,23 @@ function Favorites() {
 
       {loading ? (
         <p>Loading saved rooms...</p>
-      ) : savedRooms.length === 0 ? (
+      ) : error ? (
+        <p className="error">{error}</p>
+      ) : favorites.length === 0 ? (
         <p>No saved rooms yet. Explore rooms and save your favorites.</p>
       ) : (
         <div className="room-grid">
-          {savedRooms.map((room) => (
-            <div className="room-card" key={room.id}>
-              {room.images?.length > 0 ? (
-                <img
-                  src={`${import.meta.env.VITE_API_URL}${room.images[0]}`}
-                  alt={room.title}
-                  className="room-card-image"
-                />
-              ) : (
-                <div className="room-image-placeholder">
-                  No Photo Available
-                </div>
-              )}
+          {favorites.map((room) => (
+            <div className="room-card" key={room.room_id}>
+              <div className="room-image-placeholder">
+                No Photo Available
+              </div>
 
               <div className="room-card-details">
                 <h3>{room.title}</h3>
                 <p>📍 {room.location}</p>
                 <h3>₹{room.rent} / month</h3>
+
                 <p>
                   {room.available_rooms > 0
                     ? `${room.available_rooms} rooms available`
@@ -53,16 +80,15 @@ function Favorites() {
                 </p>
 
                 <button
+                  type="button"
                   className="favorite-btn"
-                  onClick={() =>
-                    setFavorites(toggleFavorite(room.id))
-                  }
+                  onClick={() => handleRemove(room.room_id)}
                 >
                   ♥ Remove from Saved
                 </button>
 
                 <Link
-                  to={`/rooms/${room.id}`}
+                  to={`/rooms/${room.room_id}`}
                   className="primary-btn"
                 >
                   View Details

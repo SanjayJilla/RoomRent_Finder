@@ -83,7 +83,11 @@ function ManageRoomImages() {
           {images.map((image) => (
             <div className="manage-photo-card" key={image.id}>
               <img
-                src={`${API}${image.image_url}`}
+                src={
+                  image.image_url.startsWith("http")
+                    ? image.image_url
+                    : `${API}${image.image_url}`
+                }
                 alt="Property"
               />
 

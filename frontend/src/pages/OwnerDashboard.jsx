@@ -87,8 +87,12 @@ function OwnerDashboard() {
             className="primary-btn"
         >
           + Add Property
-        </button>
+                      </button>
+        <Link to="/owner/profile" className="primary-btn">
+                        My Profile
+                      </Link>
       </div>
+
       {loading ? (
         <p>Loading your rooms...</p>
       ) : error ? (
@@ -101,7 +105,11 @@ function OwnerDashboard() {
             <div className="owner-property-card" key={room.id}>
                 {room.images?.length > 0 ? (
                     <img
-                    src={`${import.meta.env.VITE_API_URL}${room.images[0]}`}
+                    src={
+                      room.images[0].startsWith("http")
+                        ? room.images[0]
+                        : `${import.meta.env.VITE_API_URL}${room.images[0]}`
+                    }
                     alt={room.title}
                     className="owner-property-image"
                     />
@@ -158,9 +166,7 @@ function OwnerDashboard() {
                         Delete
                     </button>
                     
-                    <Link to="/owner/profile" className="primary-btn">
-                        My Profile
-                      </Link>
+                    
                       
                     </div>
                 </div>
