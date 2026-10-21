@@ -1,8 +1,10 @@
+
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
 
-const API = `${import.meta.env.VITE_API_URL}`;
+const API = import.meta.env.VITE_API_URL;
+const MAX_IMAGES = 3;
 
 function ManageRoomImages() {
   const { roomId } = useParams();
@@ -15,13 +17,18 @@ function ManageRoomImages() {
   useEffect(() => {
     const fetchImages = async () => {
       try {
+        setError("");
+
         const response = await axios.get(
           `${API}/rooms/${roomId}/images`
         );
 
         setImages(response.data);
       } catch (err) {
-        setError("Unable to load property photos.");
+        setError(
+          err.response?.data?.detail ||
+            "Unable to load property photos."
+        );
       } finally {
         setLoading(false);
       }
@@ -38,6 +45,8 @@ function ManageRoomImages() {
     if (!confirmed) return;
 
     try {
+      setError("");
+
       const token = sessionStorage.getItem("access_token");
 
       await axios.delete(
@@ -54,25 +63,47 @@ function ManageRoomImages() {
       );
     } catch (err) {
       setError(
-        err.response?.data?.detail || "Unable to delete photo."
+        err.response?.data?.detail ||
+          "Unable to delete photo."
       );
     }
   };
 
-  if (loading) return <p>Loading photos...</p>;
+  if (loading) {
+    return <p>Loading photos...</p>;
+  }
+
+  const atLimit = images.length >= MAX_IMAGES;
 
   return (
     <div className="container">
       <h1>Manage Property Photos</h1>
 
+      <p>
+        Photos uploaded: <strong>{images.length}/{MAX_IMAGES}</strong>
+      </p>
+
       <button
         className="primary-btn"
+        disabled={atLimit}
         onClick={() =>
           navigate(`/owner/rooms/${roomId}/upload`)
         }
+        title={
+          atLimit
+            ? "Delete a photo before uploading another."
+            : "Upload a property photo"
+        }
       >
-        + Upload More Photos
+        {atLimit ? "Photo Limit Reached" : "+ Upload More Photos"}
       </button>
+
+      {atLimit && (
+        <p>
+          Maximum 3 photos allowed. Delete a photo to upload a
+          replacement.
+        </p>
+      )}
 
       {error && <p className="error">{error}</p>}
 

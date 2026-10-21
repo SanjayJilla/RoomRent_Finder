@@ -101,98 +101,82 @@ function StudentDashboard() {
   ).length;
 
   // Logout
+  
   const handleLogout = () => {
-    sessionStorage.removeItem("student_access_token");
-    sessionStorage.removeItem("student_name");
+  sessionStorage.removeItem("student_access_token");
+  sessionStorage.removeItem("student_name");
 
-    navigate("/student/login", { replace: true });
-  };
+  window.dispatchEvent(new Event("auth-changed"));
 
+  navigate("/", { replace: true });
+};
   // Enquiry status
   const getEnquiryStatus = (status) => {
-    const value = (status || "Pending").toLowerCase();
+  const value = (status || "Pending").toLowerCase();
 
-    if (value === "accepted") {
-      return {
-        label: "Accepted",
-        className: "enquiry-status accepted",
-      };
-    }
+  const allowed = [
+    "pending",
+    "contacted",
+    "closed",
+    "accepted",
+    "rejected",
+  ];
 
-    if (value === "rejected") {
-      return {
-        label: "Rejected",
-        className: "enquiry-status rejected",
-      };
-    }
+  const normalized = allowed.includes(value) ? value : "pending";
 
-    return {
-      label: "Pending",
-      className: "enquiry-status pending",
-    };
+  return {
+    label: normalized.charAt(0).toUpperCase() + normalized.slice(1),
+    className: normalized,
   };
+};
 
-  return (
-    <div className="container">
+  
+return (
+  <div className="student-dashboard-page">
+    <div className="student-dashboard-container">
 
       {/* Welcome section */}
-      <h1>Welcome, {studentName}!</h1>
+      <div className="student-dashboard-header">
+        <div>
+          <span className="student-dashboard-kicker">
+            STUDENT WORKSPACE
+          </span>
 
-      <p>
-        Manage your rental room search and enquiries.
-      </p>
+          <h1>Welcome, {studentName}!</h1>
 
-      {/* Dashboard actions */}
-      <div className="student-dashboard-actions">
+          <p>
+            Manage your room search, saved properties, and enquiries
+            in one place.
+          </p>
+        </div>
 
-        <Link to="/" className="primary-btn">
-          Explore Rooms
+        <Link to="/" className="student-explore-btn">
+          Explore Rooms →
         </Link>
-
-        <Link to="/favorites" className="primary-btn">
-          Saved Rooms
-        </Link>
-
-        <Link
-          to="/student/profile"
-          className="primary-btn"
-        >
-          My Profile
-        </Link>
-
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="delete-btn"
-        >
-          Logout
-        </button>
-
       </div>
 
       {/* Dashboard statistics */}
       <div className="student-stats-grid">
 
         <div className="student-stat-card">
-          <h3>❤️ Saved Rooms</h3>
-
-          <p>{savedRoomsCount}</p>
-
-          <Link to="/favorites">
-            View Saved Rooms →
-          </Link>
+          <div className="student-stat-icon">❤️</div>
+          <span>Saved Rooms</span>
+          <strong>{savedRoomsCount}</strong>
+          <Link to="/favorites">View Saved Rooms →</Link>
         </div>
 
         <div className="student-stat-card">
-          <h3>📩 Total Enquiries</h3>
-
-          <p>{totalEnquiries}</p>
+          <div className="student-stat-icon">📩</div>
+          <span>Total Enquiries</span>
+          <strong>{totalEnquiries}</strong>
+          <p>Enquiries you have submitted</p>
         </div>
 
         <div className="student-stat-card">
-          <h3>⏳ Pending Enquiries</h3>
-
-          <p>{pendingEnquiries}</p>
+          <div className="student-stat-icon">⏳</div>
+          <span>Pending Enquiries</span>
+          <strong>{pendingEnquiries}</strong>
+          <p>Awaiting owner response</p>
         </div>
 
       </div>
@@ -202,35 +186,54 @@ function StudentDashboard() {
       )}
 
       {/* Enquiry history */}
-      <div className="student-enquiries-section">
+      <section className="student-enquiries-section">
 
-        <h2>My Enquiries ({enquiries.length})</h2>
+        <div className="student-enquiries-title">
+          <div>
+            <h2>My Enquiries</h2>
+            <p>Track your enquiries and owner responses.</p>
+          </div>
+
+          <span className="student-enquiries-count">
+            {totalEnquiries} Enquiries
+          </span>
+        </div>
 
         {loading ? (
-          <p>Loading your enquiries...</p>
+          <div className="student-enquiries-empty">
+            Loading your enquiries...
+          </div>
         ) : error ? (
-          <p className="error">{error}</p>
+          <div className="student-enquiries-empty error">
+            {error}
+          </div>
         ) : enquiries.length === 0 ? (
-          <p>
-            You haven't sent any enquiries yet.
-            Explore rooms and contact an owner.
-          </p>
+          <div className="student-enquiries-empty">
+            <div className="student-empty-icon">📨</div>
+
+            <h3>No enquiries yet</h3>
+
+            <p>
+              You haven't contacted any property owners yet.
+              Explore available rooms and send your first enquiry.
+            </p>
+
+            <Link to="/" className="student-explore-btn">
+              Explore Available Rooms →
+            </Link>
+          </div>
         ) : (
           <div className="student-enquiries-list">
 
             {enquiries.map((enquiry) => {
-              const status = getEnquiryStatus(
-                enquiry.status
-              );
+              const status = getEnquiryStatus(enquiry.status);
 
               return (
-                <div
+                <article
                   className="student-enquiry-card"
                   key={enquiry.id}
                 >
-
                   <div className="student-enquiry-heading">
-
                     <h3>
                       {enquiry.room_title || "Room"}
                     </h3>
@@ -240,40 +243,51 @@ function StudentDashboard() {
                     >
                       {status.label}
                     </span>
-
                   </div>
 
-                  <p>
+                  <p className="student-enquiry-location">
                     📍 {enquiry.location || "Location unavailable"}
                   </p>
 
-                  <p>
-                    <strong>Rent:</strong>{" "}
-                    {enquiry.rent != null
-                      ? `₹${Number(enquiry.rent).toLocaleString("en-IN")}/month`
-                      : "Not available"}
-                  </p>
+                  <div className="student-enquiry-details">
+                    <div>
+                      <span>Monthly Rent</span>
+                      <strong>
+                        {enquiry.rent != null
+                          ? `₹${Number(enquiry.rent).toLocaleString("en-IN")}`
+                          : "Not available"}
+                      </strong>
+                    </div>
 
-                  <p>
-                    <strong>Your Message:</strong>{" "}
-                    {enquiry.message}
-                  </p>
+                    <div>
+                      <span>Enquiry Status</span>
+                      <strong>{status.label}</strong>
+                    </div>
+                  </div>
 
-                  <Link to={`/rooms/${enquiry.room_id}`}>
+                  <div className="student-enquiry-message">
+                    <span>Your Message</span>
+                    <p>{enquiry.message}</p>
+                  </div>
+
+                  <Link
+                    to={`/rooms/${enquiry.room_id}`}
+                    className="student-view-property"
+                  >
                     View Property →
                   </Link>
-
-                </div>
+                </article>
               );
             })}
 
           </div>
         )}
-
-      </div>
+      </section>
 
     </div>
-  );
+  </div>
+);
+
 }
 
 export default StudentDashboard;

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,12 +15,18 @@ function StudentRegister() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+    const { name, value } = e.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]:
+        name === "phone"
+          ? value.replace(/\D/g, "").slice(0, 10)
+          : value,
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -36,9 +43,12 @@ function StudentRegister() {
       alert("Registration successful! Please login.");
       navigate("/student/login");
     } catch (err) {
+      const detail = err.response?.data?.detail;
+
       setError(
-        err.response?.data?.detail ||
-          "Registration failed. Please try again."
+        typeof detail === "string"
+          ? detail
+          : "Registration failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -47,66 +57,150 @@ function StudentRegister() {
 
   return (
     <div className="student-auth-container">
-      <form className="student-auth-card" onSubmit={handleSubmit}>
-        <h2>Student Registration</h2>
-        <p>Create an account to find your ideal room.</p>
+      <div className="student-login-wrapper">
 
-        <label>Full Name</label>
-        <input
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          required
-          minLength={2}
-          maxLength={100}
-          placeholder="Enter your name"
-        />
+        <div className="student-login-icon">🎓</div>
 
-        <label>Email</label>
-        <input
-          type="email"
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-          required
-          placeholder="Enter your email"
-        />
+        <div className="student-login-heading">
+          <span>STUDENT PORTAL</span>
+          <h1>Create your account</h1>
+          <p>
+            Join RoomRentFinder to discover rooms, save your
+            favorites, and contact property owners.
+          </p>
+        </div>
 
-        <label>Phone Number</label>
-        <input
-          type="tel"
-          name="phone"
-          value={form.phone}
-          onChange={handleChange}
-          required
-          pattern="[0-9]{10}"
-          maxLength={10}
-          placeholder="10-digit mobile number"
-        />
+        <form
+          className="student-auth-card student-register-card"
+          onSubmit={handleSubmit}
+        >
+          {/* Full name */}
+          <div className="student-login-field">
+            <label htmlFor="student-register-name">
+              Full Name
+            </label>
 
-        <label>Password</label>
-        <input
-          type="password"
-          name="password"
-          value={form.password}
-          onChange={handleChange}
-          required
-          minLength={8}
-          maxLength={128}
-          placeholder="Minimum 8 characters"
-        />
+            <input
+              id="student-register-name"
+              type="text"
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+              minLength={2}
+              maxLength={100}
+              autoComplete="name"
+              placeholder="Enter your full name"
+            />
+          </div>
 
-        {error && <p className="error">{error}</p>}
+          {/* Email */}
+          <div className="student-login-field">
+            <label htmlFor="student-register-email">
+              Email Address
+            </label>
 
-        <button className="primary-btn" disabled={loading}>
-          {loading ? "Registering..." : "Create Account"}
-        </button>
+            <input
+              id="student-register-email"
+              type="email"
+              name="email"
+              value={form.email}
+              onChange={handleChange}
+              required
+              autoComplete="email"
+              placeholder="Enter your email"
+            />
+          </div>
 
-        <p>
-          Already registered?{" "}
-          <Link to="/student/login">Login here</Link>
-        </p>
-      </form>
+          {/* Phone */}
+          <div className="student-login-field">
+            <label htmlFor="student-register-phone">
+              Phone Number
+            </label>
+
+            <input
+              id="student-register-phone"
+              type="tel"
+              name="phone"
+              inputMode="numeric"
+              value={form.phone}
+              onChange={handleChange}
+              required
+              pattern="[0-9]{10}"
+              maxLength={10}
+              autoComplete="tel-national"
+              title="Enter a 10-digit mobile number"
+              placeholder="10-digit mobile number"
+            />
+          </div>
+
+          {/* Password */}
+          <div className="student-login-field">
+            <label htmlFor="student-register-password">
+              Password
+            </label>
+
+            <div className="student-password-wrapper">
+              <input
+                id="student-register-password"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                onChange={handleChange}
+                required
+                minLength={8}
+                maxLength={128}
+                autoComplete="new-password"
+                placeholder="Minimum 8 characters"
+              />
+
+              <button
+                type="button"
+                className="student-password-toggle"
+                onClick={() =>
+                  setShowPassword((previous) => !previous)
+                }
+                aria-label={
+                  showPassword ? "Hide password" : "Show password"
+                }
+                aria-pressed={showPassword}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            <small className="student-register-hint">
+              Use at least 8 characters for your password.
+            </small>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <p className="student-login-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            className="student-login-submit"
+            disabled={loading}
+          >
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
+
+          <p className="student-login-register">
+            Already have an account?{" "}
+            <Link to="/student/login">Login here</Link>
+          </p>
+        </form>
+
+        <Link to="/" className="student-login-back">
+          ← Back to Home
+        </Link>
+
+      </div>
     </div>
   );
 }

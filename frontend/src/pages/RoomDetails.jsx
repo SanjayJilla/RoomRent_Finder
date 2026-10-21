@@ -91,120 +91,207 @@ function RoomDetails() {
       setSending(false);
     }
   };
-
   return (
-    <div className="container">
-      <Link to="/">← Back to Listings</Link>
+  <div className="details-page">
+    <div className="details-container">
 
-      <div className="room-details">
-        <h1>{room.title}</h1>
-        <p>📍 {room.location}</p>
+      <Link to="/" className="details-back">
+        ← Back to Listings
+      </Link>
 
-        <h2>₹{room.rent}/month</h2>
-        <p>Security Deposit: ₹{room.deposit}</p>
+      {/* Property header */}
+      <div className="details-header">
+        <div>
+          <span className="details-kicker">PROPERTY DETAILS</span>
+          <h1>{room.title}</h1>
+          <p className="details-location">📍 {room.location}</p>
+        </div>
 
-        <h3>Property Information</h3>
-        <p>Property Type: {room.property_type}</p>
-        <p>Room Type: {room.room_type}</p>
-        <p>Total Rooms: {room.total_rooms}</p>
-        <p>Available Rooms: {room.available_rooms}</p>
-        <p>Gender Preference: {room.gender_preference}</p>
-
-        <h3>Amenities</h3>
-        <p>Wi-Fi: {room.wifi ? "Yes" : "No"}</p>
-        <p>Furnished: {room.furnished ? "Yes" : "No"}</p>
-        <p>
-          Attached Bathroom: {room.attached_bathroom ? "Yes" : "No"}
-        </p>
-        <p>
-          Food Included: {room.food_included ? "Yes" : "No"}
-        </p>
-
-        <h3>Description</h3>
-        <p>{room.description || "No description provided."}</p>
-
-        <p>
+        <span
+          className={`details-status ${
+            room.available_rooms > 0 ? "available" : "occupied"
+          }`}
+        >
           {room.available_rooms > 0
-            ? "Available for Rent"
-            : "Currently Fully Occupied"}
-        </p>
-        <h3>Contact Owner</h3>
+            ? `${room.available_rooms} Rooms Available`
+            : "Fully Occupied"}
+        </span>
+      </div>
 
-        {room.owner_phone ? (
-            <div className="contact-owner">
-            <p>Owner: {room.owner_name}</p>
+      {/* Property photos */}
+      {room.images?.length > 0 ? (
+        <div className="details-gallery">
+          {room.images.map((imageUrl, index) => (
+            <img
+              key={`${imageUrl}-${index}`}
+              src={
+                imageUrl.startsWith("http")
+                  ? imageUrl
+                  : `${import.meta.env.VITE_API_URL}${imageUrl}`
+              }
+              alt={`${room.title} photo ${index + 1}`}
+              className="details-gallery-image"
+              loading="lazy"
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="details-no-image">
+          🏠 No property photos uploaded yet
+        </div>
+      )}
 
-            <a
-                href={`tel:${room.owner_phone}`}
-                className="primary-btn"
-            >
-            📞 Call Owner
-            </a>
+      {/* Main two-column layout */}
+      <div className="details-layout">
+
+        {/* Left side */}
+        <div className="details-main">
+
+          <section className="details-card">
+            <h2>Property Information</h2>
+
+            <div className="details-info-grid">
+              {[
+                ["Property Type", room.property_type],
+                ["Room Type", room.room_type],
+                ["Total Rooms", room.total_rooms],
+                ["Available Rooms", room.available_rooms],
+                ["Gender Preference", room.gender_preference],
+              ].map(([label, value]) => (
+                <div className="details-info-item" key={label}>
+                  <span>{label}</span>
+                  <strong>{value ?? "Not specified"}</strong>
+                </div>
+              ))}
             </div>
-            ) : (
-                <p>Owner contact information is unavailable.</p>
-            )}
-            {room.images?.length > 0 ? (
-            <div className="room-gallery">
-                {room.images.map((imageUrl, index) => (
-                <img
-                    key={imageUrl}
-                    src={
-                        imageUrl.startsWith("http")
-                          ? imageUrl
-                          : `${import.meta.env.VITE_API_URL}${imageUrl}`
-                      }
-                    alt={`${room.title} photo ${index + 1}`}
-                    className="gallery-image"
-                />
-                ))}
+          </section>
+
+          <section className="details-card">
+            <h2>Amenities</h2>
+
+            <div className="details-amenities">
+              {[
+                ["📶 Wi-Fi", room.wifi],
+                ["🛏️ Furnished", room.furnished],
+                ["🚿 Attached Bathroom", room.attached_bathroom],
+                ["🍽️ Food Included", room.food_included],
+              ].map(([label, enabled]) => (
+                <div className="details-amenity" key={label}>
+                  <span>{label}</span>
+                  <strong className={enabled ? "amenity-yes" : "amenity-no"}>
+                    {enabled ? "✓ Yes" : "✕ No"}
+                  </strong>
+                </div>
+              ))}
             </div>
+          </section>
+
+          <section className="details-card">
+            <h2>Description</h2>
+            <p className="details-description">
+              {room.description || "No description provided."}
+            </p>
+          </section>
+
+        </div>
+
+        {/* Right side */}
+        <aside className="details-sidebar">
+
+          <section className="details-card details-price-card">
+            <span className="details-price-label">MONTHLY RENT</span>
+
+            <div className="details-price">
+              ₹{Number(room.rent).toLocaleString("en-IN")}
+              <span>/month</span>
+            </div>
+
+            <div className="details-deposit">
+              <span>Security Deposit</span>
+              <strong>
+                ₹{Number(room.deposit ?? 0).toLocaleString("en-IN")}
+              </strong>
+            </div>
+          </section>
+
+          <section className="details-card">
+            <h2>Contact Owner</h2>
+
+            {room.owner_phone ? (
+              <div className="details-contact">
+                <p>
+                  Owner: <strong>{room.owner_name || "Property Owner"}</strong>
+                </p>
+
+                <a
+                  href={`tel:${room.owner_phone}`}
+                  className="details-call-btn"
+                >
+                  📞 Call Owner
+                </a>
+              </div>
             ) : (
-            <p>No property photos uploaded yet.</p>
+              <p>Owner contact information is unavailable.</p>
             )}
-            <div className="enquiry-section">
+          </section>
+
+          <section className="details-card">
             <h2>Interested in this property?</h2>
-            <p>Send an enquiry directly to the property owner.</p>
+            <p className="details-enquiry-subtitle">
+              Send an enquiry directly to the property owner.
+            </p>
 
-            <form onSubmit={handleEnquirySubmit} className="enquiry-form">
+            <form
+              onSubmit={handleEnquirySubmit}
+              className="details-enquiry-form"
+            >
+              <label htmlFor="enquiry-message">Your Message</label>
 
-                <label htmlFor="enquiry-message">Message</label>
-                <textarea
+              <textarea
                 id="enquiry-message"
                 placeholder="I'm interested in this room. Is it available for a visit?"
                 value={enquiry.message}
                 onChange={(e) =>
-                    setEnquiry({
+                  setEnquiry({
                     ...enquiry,
                     message: e.target.value,
-                    })
+                  })
                 }
                 minLength={5}
                 maxLength={1000}
-                rows={4}
+                rows={5}
                 required
-                />
+              />
 
-                {enquirySuccess && (
+              {enquirySuccess && (
                 <p className="enquiry-success">{enquirySuccess}</p>
-                )}
+              )}
 
-                {enquiryError && (
+              {enquiryError && (
                 <p className="error">{enquiryError}</p>
-                )}
+              )}
 
-                <button
+              <button
                 type="submit"
-                className="primary-btn"
-                disabled={sending || room?.available_rooms <= 0}
-                >
-                {sending ? "Sending..." : "Send Enquiry"}
-                </button>
+                className="details-enquiry-btn"
+                disabled={sending || room.available_rooms <= 0}
+              >
+                {sending
+                  ? "Sending..."
+                  : room.available_rooms <= 0
+                  ? "Currently Unavailable"
+                  : "Send Enquiry"}
+              </button>
             </form>
-            </div>
+          </section>
+
+        </aside>
       </div>
     </div>
-  );
+  </div>
+);
+  
+  
 }
 
 export default RoomDetails;

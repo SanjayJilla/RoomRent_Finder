@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
@@ -9,17 +10,23 @@ function Register() {
     name: "",
     email: "",
     phone: "",
-    password: ""
+    password: "",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]:
+        name === "phone"
+          ? value.replace(/\D/g, "").slice(0, 10)
+          : value,
+    }));
   };
 
   const handleRegister = async (e) => {
@@ -37,6 +44,7 @@ function Register() {
       navigate("/login");
     } catch (err) {
       const detail = err.response?.data?.detail;
+
       setError(
         typeof detail === "string"
           ? detail
@@ -48,57 +56,151 @@ function Register() {
   };
 
   return (
-    <div className="auth-container">
-      <form onSubmit={handleRegister} className="auth-card">
-        <h2>Owner Registration</h2>
-        <p>Create an account to list your property</p>
+    <div className="owner-auth-container">
+      <div className="owner-login-wrapper">
 
-        <input
-          name="name"
-          placeholder="Full Name"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
+        <div className="owner-login-icon">🏠</div>
 
-        <input
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-        />
+        <div className="owner-login-heading">
+          <span>PROPERTY OWNER PORTAL</span>
 
-        <input
-          name="phone"
-          type="tel"
-          placeholder="Phone Number"
-          value={form.phone}
-          onChange={handleChange}
-          required
-        />
+          <h1>Create your account</h1>
 
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-          minLength={8}
-          required
-        />
+          <p>
+            Join RoomRentFinder to list your properties,
+            manage availability, and connect with students.
+          </p>
+        </div>
 
-        {error && <p className="error">{error}</p>}
+        <form
+          onSubmit={handleRegister}
+          className="owner-auth-card owner-register-card"
+        >
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Registering..." : "Register"}
-        </button>
+          {/* Full Name */}
+          <div className="owner-login-field">
+            <label htmlFor="owner-register-name">
+              Full Name
+            </label>
 
-        <p>
-          Already have an account? <Link to="/login">Login</Link>
-        </p>
-      </form>
+            <input
+              id="owner-register-name"
+              name="name"
+              type="text"
+              value={form.name}
+              onChange={handleChange}
+              placeholder="Enter your full name"
+              autoComplete="name"
+              required
+            />
+          </div>
+
+          {/* Email */}
+          <div className="owner-login-field">
+            <label htmlFor="owner-register-email">
+              Email Address
+            </label>
+
+            <input
+              id="owner-register-email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
+              autoComplete="email"
+              required
+            />
+          </div>
+
+          {/* Phone */}
+          <div className="owner-login-field">
+            <label htmlFor="owner-register-phone">
+              Phone Number
+            </label>
+
+            <input
+              id="owner-register-phone"
+              name="phone"
+              type="tel"
+              inputMode="numeric"
+              value={form.phone}
+              onChange={handleChange}
+              placeholder="10-digit mobile number"
+              pattern="[0-9]{10}"
+              maxLength={10}
+              title="Enter a 10-digit mobile number"
+              autoComplete="tel-national"
+              required
+            />
+          </div>
+
+          {/* Password */}
+          <div className="owner-login-field">
+            <label htmlFor="owner-register-password">
+              Password
+            </label>
+
+            <div className="owner-password-wrapper">
+              <input
+                id="owner-register-password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Minimum 8 characters"
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+
+              <button
+                type="button"
+                className="owner-password-toggle"
+                onClick={() =>
+                  setShowPassword((previous) => !previous)
+                }
+                aria-label={
+                  showPassword ? "Hide password" : "Show password"
+                }
+                aria-pressed={showPassword}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+
+            <small className="owner-register-hint">
+              Use at least 8 characters for your password.
+            </small>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <p className="owner-login-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            className="owner-login-submit"
+            disabled={loading}
+          >
+            {loading ? "Creating Account..." : "Create Account"}
+          </button>
+
+          <p className="owner-login-register">
+            Already have an account?{" "}
+            <Link to="/login">Login here</Link>
+          </p>
+        </form>
+
+        <Link to="/" className="owner-login-back">
+          ← Back to Home
+        </Link>
+
+      </div>
     </div>
   );
 }

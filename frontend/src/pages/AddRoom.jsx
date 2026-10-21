@@ -1,9 +1,11 @@
+
 import { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 function AddRoom() {
   const navigate = useNavigate();
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,17 +29,48 @@ function AddRoom() {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    setForm({
-      ...form,
+    setForm((previous) => ({
+      ...previous,
       [name]: type === "checkbox" ? checked : value,
-    });
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (Number(form.available_rooms) > Number(form.total_rooms)) {
+    const rent = Number(form.rent);
+    const deposit = Number(form.deposit);
+    const totalRooms = Number(form.total_rooms);
+    const availableRooms = Number(form.available_rooms);
+
+    if (rent <= 0) {
+      setError("Monthly rent must be greater than zero.");
+      return;
+    }
+
+    if (deposit < 0) {
+      setError("Deposit cannot be negative.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(totalRooms) ||
+      totalRooms < 1
+    ) {
+      setError("Total rooms must be at least 1.");
+      return;
+    }
+
+    if (
+      !Number.isInteger(availableRooms) ||
+      availableRooms < 0
+    ) {
+      setError("Available rooms cannot be negative.");
+      return;
+    }
+
+    if (availableRooms > totalRooms) {
       setError("Available rooms cannot exceed total rooms.");
       return;
     }
@@ -47,14 +80,19 @@ function AddRoom() {
     try {
       const token = sessionStorage.getItem("access_token");
 
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
       await axios.post(
         `${import.meta.env.VITE_API_URL}/rooms`,
         {
           ...form,
-          rent: Number(form.rent),
-          deposit: Number(form.deposit),
-          total_rooms: Number(form.total_rooms),
-          available_rooms: Number(form.available_rooms),
+          rent,
+          deposit,
+          total_rooms: totalRooms,
+          available_rooms: availableRooms,
         },
         {
           headers: {
@@ -66,123 +104,389 @@ function AddRoom() {
       navigate("/owner/dashboard");
     } catch (err) {
       const detail = err.response?.data?.detail;
+
       setError(
         typeof detail === "string"
           ? detail
-          : "Unable to add property. Check your details."
+          : "Unable to add property. Please check your details and try again."
       );
     } finally {
       setLoading(false);
     }
   };
 
+  const amenities = [
+    {
+      name: "furnished",
+      label: "Furnished",
+      description: "Furniture is provided",
+      icon: "🛋️",
+    },
+    {
+      name: "wifi",
+      label: "Wi-Fi",
+      description: "Internet access available",
+      icon: "📶",
+    },
+    {
+      name: "attached_bathroom",
+      label: "Attached Bathroom",
+      description: "Private attached bathroom",
+      icon: "🚿",
+    },
+    {
+      name: "food_included",
+      label: "Food Included",
+      description: "Meals are included in rent",
+      icon: "🍽️",
+    },
+  ];
+
   return (
-    <div className="container">
-      <h1>Add New Property</h1>
+    <div className="add-property-page">
+      <div className="add-property-wrapper">
 
-      <form className="property-form" onSubmit={handleSubmit}>
-        <input
-          name="title"
-          placeholder="Property title"
-          value={form.title}
-          onChange={handleChange}
-          required
-        />
+        <Link
+          to="/owner/dashboard"
+          className="add-property-back"
+        >
+          ← Back to Dashboard
+        </Link>
 
-        <input
-          name="location"
-          placeholder="Location"
-          value={form.location}
-          onChange={handleChange}
-          required
-        />
+        <header className="add-property-header">
+          <span className="add-property-eyebrow">
+            OWNER WORKSPACE
+          </span>
 
-        {["rent", "deposit", "total_rooms", "available_rooms"].map(
-          (field) => (
-            <label key={field}>
-              {field.replaceAll("_", " ")}
-              <input
-                type="number"
-                name={field}
-                value={form[field]}
+          <h1>Add New Property</h1>
+
+          <p>
+            Share your property details and help students
+            find a place they can call home.
+          </p>
+        </header>
+
+        <form
+          className="add-property-form"
+          onSubmit={handleSubmit}
+        >
+          {/* PROPERTY DETAILS */}
+          <section className="add-property-section">
+            <div className="add-property-section-heading">
+              <span className="add-property-section-icon">
+                🏠
+              </span>
+
+              <div>
+                <h2>Property Details</h2>
+                <p>Give your property a name and location.</p>
+              </div>
+            </div>
+
+            <div className="add-property-fields">
+              <div className="add-property-field full-width">
+                <label htmlFor="property-title">
+                  Property Title <span>*</span>
+                </label>
+
+                <input
+                  id="property-title"
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder="e.g. Sunrise Student Homes"
+                  required
+                  maxLength={150}
+                />
+              </div>
+
+              <div className="add-property-field full-width">
+                <label htmlFor="property-location">
+                  Location <span>*</span>
+                </label>
+
+                <input
+                  id="property-location"
+                  name="location"
+                  value={form.location}
+                  onChange={handleChange}
+                  placeholder="Area, city or nearby landmark"
+                  required
+                  maxLength={200}
+                />
+              </div>
+
+              <div className="add-property-field">
+                <label htmlFor="property-type">
+                  Property Type <span>*</span>
+                </label>
+
+                <select
+                  id="property-type"
+                  name="property_type"
+                  value={form.property_type}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="PG">PG</option>
+                  <option value="Apartment">Apartment</option>
+                  <option value="Independent Room">
+                    Independent Room
+                  </option>
+                </select>
+              </div>
+
+              <div className="add-property-field">
+                <label htmlFor="room-type">
+                  Room Type <span>*</span>
+                </label>
+
+                <select
+                  id="room-type"
+                  name="room_type"
+                  value={form.room_type}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="Single">Single</option>
+                  <option value="Double Sharing">
+                    Double Sharing
+                  </option>
+                  <option value="Triple Sharing">
+                    Triple Sharing
+                  </option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {/* PRICING */}
+          <section className="add-property-section">
+            <div className="add-property-section-heading">
+              <span className="add-property-section-icon">
+                ₹
+              </span>
+
+              <div>
+                <h2>Pricing & Availability</h2>
+                <p>Set your monthly rent and room capacity.</p>
+              </div>
+            </div>
+
+            <div className="add-property-fields">
+              <div className="add-property-field">
+                <label htmlFor="property-rent">
+                  Monthly Rent (₹) <span>*</span>
+                </label>
+
+                <input
+                  id="property-rent"
+                  name="rent"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.rent}
+                  onChange={handleChange}
+                  placeholder="e.g. 6000"
+                  required
+                />
+              </div>
+
+              <div className="add-property-field">
+                <label htmlFor="property-deposit">
+                  Security Deposit (₹) <span>*</span>
+                </label>
+
+                <input
+                  id="property-deposit"
+                  name="deposit"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.deposit}
+                  onChange={handleChange}
+                  placeholder="e.g. 3000"
+                  required
+                />
+              </div>
+
+              <div className="add-property-field">
+                <label htmlFor="property-total-rooms">
+                  Total Rooms <span>*</span>
+                </label>
+
+                <input
+                  id="property-total-rooms"
+                  name="total_rooms"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={form.total_rooms}
+                  onChange={handleChange}
+                  placeholder="e.g. 5"
+                  required
+                />
+              </div>
+
+              <div className="add-property-field">
+                <label htmlFor="property-available-rooms">
+                  Available Rooms <span>*</span>
+                </label>
+
+                <input
+                  id="property-available-rooms"
+                  name="available_rooms"
+                  type="number"
+                  min="0"
+                  step="1"
+                  max={form.total_rooms || undefined}
+                  value={form.available_rooms}
+                  onChange={handleChange}
+                  placeholder="e.g. 2"
+                  required
+                />
+              </div>
+
+              <div className="add-property-field full-width">
+                <label htmlFor="gender-preference">
+                  Preferred Tenants <span>*</span>
+                </label>
+
+                <select
+                  id="gender-preference"
+                  name="gender_preference"
+                  value={form.gender_preference}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="Any">Any</option>
+                  <option value="Boys">Boys</option>
+                  <option value="Girls">Girls</option>
+                </select>
+              </div>
+            </div>
+
+            <p className="add-property-note">
+              Available rooms cannot exceed total rooms.
+              Rent is entered per month.
+            </p>
+          </section>
+
+          {/* AMENITIES */}
+          <section className="add-property-section">
+            <div className="add-property-section-heading">
+              <span className="add-property-section-icon">
+                ✨
+              </span>
+
+              <div>
+                <h2>Amenities</h2>
+                <p>Select the facilities your property offers.</p>
+              </div>
+            </div>
+
+            <div className="add-property-amenities">
+              {amenities.map((amenity) => (
+                <label
+                  key={amenity.name}
+                  className={`add-property-amenity ${
+                    form[amenity.name] ? "selected" : ""
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    name={amenity.name}
+                    checked={form[amenity.name]}
+                    onChange={handleChange}
+                  />
+
+                  <span className="add-property-amenity-icon">
+                    {amenity.icon}
+                  </span>
+
+                  <span className="add-property-amenity-text">
+                    <strong>{amenity.label}</strong>
+                    <small>{amenity.description}</small>
+                  </span>
+
+                  <span className="add-property-check">
+                    ✓
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          {/* DESCRIPTION */}
+          <section className="add-property-section">
+            <div className="add-property-section-heading">
+              <span className="add-property-section-icon">
+                📝
+              </span>
+
+              <div>
+                <h2>About Your Property</h2>
+                <p>Help students understand what makes it suitable.</p>
+              </div>
+            </div>
+
+            <div className="add-property-field">
+              <label htmlFor="property-description">
+                Description
+              </label>
+
+              <textarea
+                id="property-description"
+                name="description"
+                value={form.description}
                 onChange={handleChange}
-                min={field === "rent" || field === "total_rooms" ? 1 : 0}
-                required
+                placeholder="Describe the facilities, nearby colleges, transport, rules, or other useful details..."
+                rows={5}
+                maxLength={2000}
               />
-            </label>
-          )
-        )}
 
-        <label>
-          Property Type
-          <select
-            name="property_type"
-            value={form.property_type}
-            onChange={handleChange}
-          >
-            <option value="PG">PG</option>
-            <option value="Apartment">Apartment</option>
-            <option value="Independent Room">Independent Room</option>
-          </select>
-        </label>
+              <span className="add-property-character-count">
+                {form.description.length}/2000 characters
+              </span>
+            </div>
+          </section>
 
-        <label>
-          Room Type
-          <select
-            name="room_type"
-            value={form.room_type}
-            onChange={handleChange}
-          >
-            <option value="Single">Single</option>
-            <option value="Double Sharing">Double Sharing</option>
-            <option value="Triple Sharing">Triple Sharing</option>
-          </select>
-        </label>
+          {/* ERROR */}
+          {error && (
+            <div className="add-property-error" role="alert">
+              <span>⚠️</span>
+              <p>{error}</p>
+            </div>
+          )}
 
-        <label>
-          Gender Preference
-          <select
-            name="gender_preference"
-            value={form.gender_preference}
-            onChange={handleChange}
-          >
-            <option value="Any">Any</option>
-            <option value="Boys">Boys</option>
-            <option value="Girls">Girls</option>
-          </select>
-        </label>
+          {/* ACTIONS */}
+          <div className="add-property-actions">
+            <button
+              type="button"
+              className="add-property-cancel"
+              onClick={() => navigate("/owner/dashboard")}
+              disabled={loading}
+            >
+              Cancel
+            </button>
 
-        {[
-          "furnished",
-          "wifi",
-          "attached_bathroom",
-          "food_included",
-        ].map((field) => (
-          <label key={field} className="checkbox-label">
-            <input
-              type="checkbox"
-              name={field}
-              checked={form[field]}
-              onChange={handleChange}
-            />
-            {field.replaceAll("_", " ")}
-          </label>
-        ))}
+            <button
+              type="submit"
+              className="add-property-submit"
+              disabled={loading}
+            >
+              {loading ? "Adding Property..." : "Add Property →"}
+            </button>
+          </div>
 
-        <textarea
-          name="description"
-          placeholder="Describe your property"
-          value={form.description}
-          onChange={handleChange}
-          rows="4"
-        />
+        </form>
 
-        {error && <p className="error">{error}</p>}
+        <p className="add-property-footer">
+          You can manage your property's availability and photos
+          from your Owner Dashboard after adding it.
+        </p>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Adding..." : "Add Property"}
-        </button>
-      </form>
+      </div>
     </div>
   );
 }

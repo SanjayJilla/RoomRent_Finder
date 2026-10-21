@@ -359,7 +359,7 @@ password_hasher = PasswordHash.recommended()
 class OwnerRegister(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     email: EmailStr
-    phone: str = Field(min_length=10, max_length=15)
+    phone: str = Field(pattern=r"^[0-9]{10}$")
     password: str = Field(min_length=8)
 
 class StudentRegister(BaseModel):
@@ -541,11 +541,11 @@ def login_student(
 
 class StudentProfileUpdate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
-    phone: str = Field(min_length=10, max_length=15)
+    phone: str = Field(pattern=r"^[0-9]{10}$")
 
 class OwnerProfileUpdate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
-    phone: str = Field(min_length=10, max_length=15)
+    phone: str = Field(pattern=r"^[0-9]{10}$")
 
 
 
@@ -869,6 +869,15 @@ async def upload_room_image(
         raise HTTPException(
             status_code=403,
             detail="You cannot upload images for this property"
+        )
+    image_count = db.query(RoomImage).filter(
+        RoomImage.room_id == room_id
+    ).count()
+
+    if image_count >= 3:
+        raise HTTPException(
+            status_code=400,
+            detail="Maximum 3 photos allowed per property. Delete a photo before uploading another."
         )
 
     allowed_types = {

@@ -16,16 +16,34 @@
 }
 
 .rental-hero {
-  min-height:290px;
+  min-height:auto;
   background:linear-gradient(112deg,#10243f 0%,#193b67 72%,#235187 100%);
-  border-radius:24px;
-  padding:50px 56px;
+  border-radius:17px;
+  padding:28px 22px;
   display:flex;
   justify-content:space-between;
   align-items:center;
   overflow:hidden;
   position:relative;
   color:white;
+}
+
+.rental-hero h1 {
+  font-size: 30px;
+  line-height: 1.18;
+  letter-spacing: -0.8px;
+  margin: 12px 0;
+}
+
+.rental-hero p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.rental-hero-link {
+  padding: 12px 16px;
+  font-size: 13px;
 }
 
 .rental-hero-inner {
@@ -80,7 +98,7 @@
 
 .rental-hero-decoration {
   position:absolute;
-  right:42px;
+  
   top:20px;
   bottom:0;
   width:290px;
@@ -88,11 +106,28 @@
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  opacity:.16;
+  display:none;
   transform:rotate(-9deg);
   pointer-events:none;
 }
+/* Mobile search heading */
+.rental-search-panel {
+  padding: 20px 17px;
+  border-radius: 15px;
+}
 
+.rental-search-panel h2 {
+  font-size: 23px;
+  line-height: 1.25;
+}
+
+/* Keep the heading and reset action from crowding */
+.rental-search-panel-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
 .rental-hero-house {
   font-size:230px;
   line-height:.8;
@@ -528,62 +563,150 @@
   margin-top:18px;
 }
 
-@media(max-width:980px) {
+
+@media (max-width: 980px) {
+
   .rental-filter-grid {
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
   .rental-card-grid {
-    grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
   .rental-hero {
-    padding:40px;
+    padding: 40px;
   }
+
 }
 
-@media(max-width:650px) {
+
+
+@media (max-width: 650px) {
+
+
+
   .rental-home {
-    padding:15px 14px 50px;
+    padding: 15px 14px 50px;
   }
+
+
+
+
   .rental-hero {
-    min-height:290px;
-    padding:35px 25px;
-    border-radius:17px;
+    min-height: auto;
+    padding: 28px 22px;
+    border-radius: 17px;
   }
+
   .rental-hero h1 {
-    letter-spacing:-1px;
+    font-size: 30px;
+    line-height: 1.18;
+    letter-spacing: -0.8px;
+    margin: 12px 0;
   }
+
+  .rental-hero p {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+  }
+
+  .rental-hero-link {
+    padding: 12px 16px;
+    font-size: 13px;
+  }
+
+
   .rental-hero-decoration {
-    right:-90px;
-    opacity:.09;
+    display: none;
   }
+
+
+
+
   .rental-search-panel {
-    padding:21px 17px;
-    border-radius:15px;
+    padding: 20px 17px;
+    border-radius: 15px;
   }
+
+
+
+
+  .rental-panel-heading {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .rental-panel-heading h2 {
+    font-size: 23px;
+    line-height: 1.25;
+    margin: 6px 0 0;
+  }
+
+  .rental-reset {
+    align-self: flex-start;
+    font-size: 13px;
+    padding: 6px 0;
+  }
+
+
+ 
+
   .rental-filter-grid {
-    grid-template-columns:1fr;
-    gap:14px;
-    margin-top:20px;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 20px;
   }
-  .rental-filter-footer, .rental-listings-heading, .rental-saved-strip {
-    flex-direction:column;
-    align-items:stretch;
+
+
+
+
+  .rental-filter-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
+
   .rental-filter-note {
-    display:none;
+    display: none;
   }
-  .rental-card-grid {
-    grid-template-columns:1fr;
-    gap:17px;
+
+
+
+  .rental-listings-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
-  .rental-sort {
-    width:100%;
-    margin-top:8px;
-  }
+
   .rental-listings-heading h2 {
-    font-size:24px;
+    font-size: 24px;
   }
+
+
+
+
+  .rental-card-grid {
+    grid-template-columns: 1fr;
+    gap: 17px;
+  }
+
+
+
+  .rental-sort {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+
+
   .rental-saved-strip {
-    gap:12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
   }
+
 }
